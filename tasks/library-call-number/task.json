@@ -1,0 +1,20 @@
+{
+  "title": "Shelve two books by LC call number, opening each gap first",
+  "category": "Impact on jobs",
+  "keywords": [
+    "library",
+    "call numbers",
+    "decimal sorting",
+    "making room",
+    "shelving"
+  ],
+  "instruction": "Shelve the two returned books in Library of Congress call-number order, left to right as you face the shelf. The shelved books are, from the left: green QA75.5, blue QA76.5, red QA76.73, purple QA76.9, orange QA77. The yellow book is QA76.625 and the teal book is QA76.8. Keep every book upright on the shelf.",
+  "context": "Library shelvers file returns by Library of Congress call number, where the class number sorts as a decimal: QA76.625 comes before QA76.73, and QA76.8 before QA76.9, the commonest shelving mistake. The shelf has no gaps, so the books to the right of each slot must be slid along before a book fits.",
+  "setup": "A wooden table; positions are from the midpoint between the two arm bases, measured forward and toward the left arm. A fixed wooden shelf board (90 x 280 x 3 mm) with a back wall and a black bookend at each end; book centre line 330 mm forward, bookends' inner faces 75 mm left and 185 mm right of the midline. On it, packed against the left bookend, five card books (50 mm deep, 30 mm thick, 50 mm tall, 40 g), from the left: green QA75.5, blue QA76.5, red QA76.73, purple QA76.9, orange QA77. Two returned books of the same size stand on the table 240 mm forward: yellow QA76.625 140 mm left, teal QA76.8 150 mm right.",
+  "scoring": "A book is shelved when it stands upright on the shelf (tilted under 10 degrees, centre within 4 mm of its resting height and within 12 mm of the books' line front to back) between the bookends. 0.2 per returned book shelved; +0.2 if both are shelved and all five original books are still shelved; +0.4 if all seven, read left to right, are in call-number order. Doing nothing scores 0; shelving both at the right end scores 0.6. Success once the score is 1.0 and all books are still for 1 s.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Stand the five shelved books back against the left bookend in their order and the two returned books on their start marks; the shelf is fixed.",
+  "fidelity": "Books are rigid blocks with no spine text, so the instruction gives each colour's call number. Real shelvers often tilt books to open a gap; here a book is gripped by its front and back and slid along, pushing the ones beyond it. Shelf friction is the simulator's default.",
+  "scores": "Dream-1 run: 0 (step limit reached, task not completed); demo: 1.0",
+  "media": "M-JUC72A"
+}
