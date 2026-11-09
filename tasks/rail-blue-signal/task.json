@@ -1,0 +1,20 @@
+{
+  "title": "Lock a derail and post a blue flag before work under a railcar",
+  "category": "Safety and alignment",
+  "keywords": [
+    "railroad",
+    "blue signal protection",
+    "49 CFR 218",
+    "derail",
+    "insertion"
+  ],
+  "instruction": "Workers are about to go under the boxcar. Set up blue-signal protection: seat the yellow derail in the mount that is between the car and the open end of the track and at least 50 ft from the car, lock it by putting the steel pin in that mount's lock socket, and stand the blue flag in the flag socket at the open end. The model is 1:150, so 50 ft is 102 mm.",
+  "context": "Under the US blue-signal rule (49 CFR 218), before anyone works under a car the track's open end gets a blue flag and a derail locked at least 50 ft from the car, between it and the open end. Here two mounts look alike; only one is on the right side and far enough.",
+  "setup": "A 1:150 scene on a wooden table; positions are from the midpoint between the two arm bases, measured forward and toward the left arm. A fixed track runs forward on the midline from 215 to 445 mm: two steel rails 12 mm apart on brown ties. A brown boxcar (80 x 26 x 24 mm) stands on it from 350 to 430 mm, with a red bumper post at 450 mm closing the far end. Beside the left rail, 20 mm left of the midline, are two grey derail mounts (6 mm walls round a 22 x 24 mm opening) at 240 and 322 mm forward, each with a lock socket (20 x 20 mm) 54 mm left of the midline; a flag socket (18 x 18 mm) sits at 200 mm on the midline. Loose on the table: a yellow derail block (12 x 14 x 20 mm, 50 g) 225 mm forward, 125 mm left; a steel lock pin (10 x 10 x 20 mm, 30 g) 215 mm forward, 95 mm right; a blue flag post (8 x 8 x 50 mm, 30 g) 235 mm forward, 145 mm right.",
+  "scoring": "A part is seated in a socket when its centre is within 6 mm of the socket centre and 4 mm of its resting height and it is tilted under 10 degrees; the derail may lean on a mount wall up to 20 degrees, with its centre within 2.5 mm of its resting height (lying down fails). 0.4 if the derail is seated in a mount between the car and the open end at least 102 mm (50 ft at 1:150) from the car (only the 240 mm mount qualifies); +0.2 if the lock pin is seated in that mount's lock socket; +0.4 if the blue flag is seated in the flag socket. The near mount earns nothing. Success once the score is 1.0 and the parts are still for 1 s.",
+  "run_limit": "2,400 steps (2 minutes at 20 Hz)",
+  "reset_notes": "Put the derail, lock pin and flag back on their start marks; the track, car, mounts and sockets are fixed.",
+  "fidelity": "A 1:150 model: the derail is a block in a mount beside the rail rather than a hinged derail over the rail head, the lock is a pin rather than a padlock, and the flag is a post. The car doesn't move, so the derail's effect isn't simulated; its position is scored.",
+  "scores": "Dream-1 run: 0 (step limit reached, task not completed); demo: 1.0",
+  "media": "M-UVF2SP"
+}
