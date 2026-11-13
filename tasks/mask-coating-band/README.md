@@ -35,13 +35,16 @@ after about 26 s.
 
 ## Scoring
 
-`score()` implements the rubric in `task.json`. Coverage is sampled on a 1 mm grid over the bar's top face. A grey
-zone point counts as covered only under the actual outline (with its yaw) of a plate lying flat on the bar. A band
-point counts as covered under any plate's top-down shadow, at any height or tilt, so a plate held over the band
-also costs points. `success()` needs both sides at 0.5 and both plates still; the episode ends after it holds for 1 s.
+`score()` implements the rubric in `task.json`. Coverage is sampled on a 0.5 mm grid over the bar's top face. Each
+plate's top-down outline is computed exactly as the convex hull of its eight projected corners, so position, yaw and
+tilt all count. Only plates lying flat on the bar mask a grey zone; any plate over the band, at any height, covers
+it. Bare steel and band coverage are converted to the width of an equal-area strip along the 40 mm edge: 0.5 per side
+within 2 mm on both, 0.25 within 5 mm. `success()` needs both sides at 0.5 and both plates still; the episode ends
+after it holds for 1 s.
 
 ## Scripted demo
 
-The left arm grips its plate across the 50 mm side, carries it over the left grey zone with the plate's inner edge
-1 mm outside the band, settles, and lets go 3 mm above the bar so the plate drops flat; then it moves clear. The
-right arm then does the same on the right.
+The bar is held in a bench vise whose jaws grip its front and back faces and stop 3 mm below its top face, so the
+plates overhang the jaws without touching them. The left arm grips its plate across the 50 mm side, carries it over
+the left grey zone with the plate's inner edge on the band's edge, settles, and lets go 3 mm above the bar so the
+plate drops flat; then it moves clear. The right arm then does the same on the right.

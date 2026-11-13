@@ -1,5 +1,5 @@
-"""On the station table: a steel flat bar (140 x 40 x 15 mm) is clamped flat in front of the arms, its long side
-running left to right. Its top face has a 50 mm orange band across the middle that is to be spray-coated; the
+"""On the station table: a steel flat bar (140 x 40 x 15 mm) is held flat in a bench vise in front of the arms, its
+long side running left to right; the two vise jaws press its front and back faces and stop 3 mm below its top face. Its top face has a 50 mm orange band across the middle that is to be spray-coated; the
 45 mm of grey bare steel on each side of the band must stay uncoated. Two loose aluminium masking plates
 (55 x 50 x 12 mm) lie on the table nearer the arms, one in front of each arm.
 
@@ -35,7 +35,13 @@ PLATE_MASS = 0.09  # aluminium
 PLATE_START = {"left_plate": (0.22, 0.15), "right_plate": (0.22, -0.15)}
 PLATE_COLOR = (0.80, 0.82, 0.86)
 
+# -- the vise: two fixed jaws along the bar's front and back faces, tops 3 mm below the bar's top face -------------
+JAW_T, JAW_H = 0.010, BAR_T - 0.003
+VISE = (0.25, 0.26, 0.30)
+
 OBJECTS = [
+    *[Box(f"vise_{n}_jaw", pos=(BAR_X + s * (BAR_DEPTH / 2 + JAW_T / 2), 0.0, TOP + JAW_H / 2),
+          size=(JAW_T, 2 * ZONE_W + BAND_W, JAW_H), color=VISE) for n, s in (("front", -1), ("back", 1))],
     Box("bar_left_zone", pos=(BAR_X, ZONE_Y["left"], TOP + BAR_T / 2), size=(BAR_DEPTH, ZONE_W, BAR_T), color=STEEL),
     Box("bar_band", pos=(BAR_X, 0.0, TOP + BAR_T / 2), size=(BAR_DEPTH, BAND_W, BAR_T), color=ORANGE),
     Box("bar_right_zone", pos=(BAR_X, ZONE_Y["right"], TOP + BAR_T / 2), size=(BAR_DEPTH, ZONE_W, BAR_T), color=STEEL),
@@ -45,16 +51,17 @@ OBJECTS = [
 PLATES = tuple(PLATE_START)
 
 # -- scoring --------------------------------------------------------------------------------------------------
-ZONE_MIN_COVERED = 0.85  # a grey zone counts as masked at 85 % of its area covered by flat plates
-ZONE_PARTIAL = 0.50
-BAND_MIN_EXPOSED = 0.80  # each half of the band must stay at least 80 % uncovered
+# Masking tolerance per edge (a common job-shop masking placement tolerance is +/-0.080 in, about 2 mm): at most
+# 2 mm of bare steel left exposed, at most 2 mm of the band covered (each as the
+# width of a strip with the same area along that edge). Within 5 mm on both counts earns partial credit.
+TOL_FULL, TOL_PARTIAL = 0.002, 0.005
 FLAT_DZ, FLAT_TILT_DEG = 0.003, 5.0
 REST_Z = BAR_TOP + PLATE_SIZE[2] / 2  # a plate's centre height lying flat on the bar
-GRID = 0.001
+GRID = 0.0005
 
 
 def _grid(y0, y1):
-    """1 mm sample points over the bar's top between y0 and y1 (m), as an (n, 2) array of x, y."""
+    """0.5 mm sample points over the bar's top between y0 and y1 (m), as an (n, 2) array of x, y."""
     xs = np.arange(BAR_X - BAR_DEPTH / 2 + GRID / 2, BAR_X + BAR_DEPTH / 2, GRID)
     ys = np.arange(y0 + GRID / 2, y1, GRID)
     gx, gy = np.meshgrid(xs, ys)
@@ -83,45 +90,57 @@ def _flat(st):
     return abs(st.pos[2] - REST_Z) < FLAT_DZ and tilt < FLAT_TILT_DEG
 
 
-def _inside_footprint(st, pts):
-    """Which points lie under a flat plate's actual top-face outline (its yaw counts), as a boolean mask."""
-    R = _rot(st.quat_xyzw)
-    d = pts - st.pos[:2]
-    u = d @ R[:2, 0]  # along the plate's own x
-    v = d @ R[:2, 1]
-    return (np.abs(u) <= PLATE_SIZE[0] / 2) & (np.abs(v) <= PLATE_SIZE[1] / 2)
-
-
-def _under_shadow(st, pts):
-    """Which points lie under a plate's top-down shadow at any height or tilt (its corners' bounding box)."""
+def _outline(st):
+    """The plate's projected outline seen from directly above: the convex hull of its 8 corners in x, y,
+    counter-clockwise. Exact for any position, yaw or tilt."""
     h = np.array(PLATE_SIZE) / 2
-    corners = np.array([[a, b, c] for a in (-1, 1) for b in (-1, 1) for c in (-1, 1)]) * h @ _rot(st.quat_xyzw).T
-    lo, hi = st.pos[:2] + corners[:, :2].min(0), st.pos[:2] + corners[:, :2].max(0)
-    return np.all((pts >= lo) & (pts <= hi), axis=1)
+    c = np.array([[a, b, d] for a in (-1, 1) for b in (-1, 1) for d in (-1, 1)]) * h @ _rot(st.quat_xyzw).T
+    pts = sorted(map(tuple, np.round(st.pos[:2] + c[:, :2], 9)))
+
+    def half(seq):
+        out = []
+        for q in seq:
+            while len(out) >= 2 and (out[-1][0] - out[-2][0]) * (q[1] - out[-2][1]) - (out[-1][1] - out[-2][1]) * (q[0] - out[-2][0]) <= 0:
+                out.pop()
+            out.append(q)
+        return out[:-1]
+
+    return np.array(half(pts) + half(pts[::-1]))
 
 
-def _fractions(objects, side):
-    """(fraction of the grey zone covered by flat plates, fraction of that half of the band left uncovered)."""
+def _under(st, pts):
+    """Which points lie under the plate's projected outline (on or inside it), as a boolean mask."""
+    hull = _outline(st)
+    inside = np.ones(len(pts), bool)
+    for a, b in zip(hull, np.roll(hull, -1, axis=0)):
+        inside &= (b[0] - a[0]) * (pts[:, 1] - a[1]) - (b[1] - a[1]) * (pts[:, 0] - a[0]) >= -1e-9
+    return inside
+
+
+def _errors(objects, side):
+    """(bare steel left exposed on that grey zone, band covered on that half of the band), each in metres as the
+    width of a strip of equal area along the zone's 40 mm edge. Only plates lying flat on the bar mask the zone; any
+    plate over the band, at any height or tilt, covers it."""
     zone, band = ZONE_PTS[side], BAND_PTS[side]
     covered = np.zeros(len(zone), bool)
     shaded = np.zeros(len(band), bool)
     for n in PLATES:
         st = objects[n]
         if _flat(st):
-            covered |= _inside_footprint(st, zone)
-        shaded |= _under_shadow(st, band)
-    return float(covered.mean()), 1.0 - float(shaded.mean())
+            covered |= _under(st, zone)
+        shaded |= _under(st, band)
+    return (1.0 - float(covered.mean())) * ZONE_W, float(shaded.mean()) * BAND_W / 2
 
 
 def _side_score(objects, side):
-    """0.5 if the zone is masked (>= 85 % covered) with its half of the band >= 80 % uncovered; 0.2 if the zone is
-    at least half covered with the band clear; 0 if the band is covered or the zone mostly bare."""
-    zone, band = _fractions(objects, side)
-    if band < BAND_MIN_EXPOSED:
-        return 0.0
-    if zone >= ZONE_MIN_COVERED:
+    """0.5 if no more than 2 mm of bare steel is exposed and no more than 2 mm of the band is covered; 0.25 if both
+    are within 5 mm; else 0."""
+    bare, intrusion = _errors(objects, side)
+    if bare <= TOL_FULL and intrusion <= TOL_FULL:
         return 0.5
-    return 0.2 if zone >= ZONE_PARTIAL else 0.0
+    if bare <= TOL_PARTIAL and intrusion <= TOL_PARTIAL:
+        return 0.25
+    return 0.0
 
 
 def score(objects):
@@ -132,7 +151,7 @@ def success(objects):
     return score(objects) >= 0.999 and all(objects[n].resting() for n in PLATES)
 
 
-TARGET_Y = {"left_plate": BAND_W / 2 + PLATE_SIZE[1] / 2 + 0.001, "right_plate": -(BAND_W / 2 + PLATE_SIZE[1] / 2 + 0.001)}
+TARGET_Y = {"left_plate": BAND_W / 2 + PLATE_SIZE[1] / 2, "right_plate": -(BAND_W / 2 + PLATE_SIZE[1] / 2)}
 
 
 def distance(objects):
@@ -169,7 +188,7 @@ def _mask(name, yaw):
 
 
 def demo():
-    """Left arm lays its plate on the left grey zone, its inner edge 1 mm outside the band, and moves clear; then the
+    """Left arm lays its plate on the left grey zone, its inner edge on the band's edge, and moves clear; then the
     right arm does the same on the right. Each plate is let go 3 mm above the bar and drops flat."""
     left = _mask("left_plate", YAW["left"]) + [Waypoint(1.5, (0.20, 0.25, TRAVEL_Z), FINGER_OPEN, "clear", YAW["left"])]
     wait = sum(w.duration for w in left)
